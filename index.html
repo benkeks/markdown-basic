@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<head></head>
+<body>
+  <div id="doc" class="markdown-body container-fluid"><h1 class="part" data-startline="1" data-endline="1" id="Selection-Sort-Example"><a class="anchor hidden-xs" href="#Selection-Sort-Example" title="Selection-Sort-Example" smoothhashscroll=""><i class="fa fa-link"></i></a>Selection Sort Example</h1><h2 class="part" data-startline="3" data-endline="3" id="main"><a class="anchor hidden-xs" href="#main" title="main" smoothhashscroll=""><i class="fa fa-link"></i></a>main</h2><ul class="part" data-startline="5" data-endline="12">
+    <li class="" data-startline="5" data-endline="5">OUTPUT <code>hello world</code></li>
+    <li class="" data-startline="7" data-endline="7">OUTPUT myList</li>
+    <li class="" data-startline="11" data-endline="12">x := 2 - myList[2]</li>
+    <li class="" data-startline="11" data-endline="12">x := ABS(x)</li>
+    <li class="" data-startline="11" data-endline="12">myStash := STASH()</li>
+    <li class="" data-startline="11" data-endline="12">UNSTASH myStash</li>
+    <!--<li class="" data-startline="11" data-endline="12">PUSH 0,3,myList</li>
+    <li class="" data-startline="11" data-endline="12">GOSUB swap</li>-->
+    <li class="" data-startline="11" data-endline="12"><a href="#swap">swap</a>(0,3,myList)</li>
+    <li class="" data-startline="5" data-endline="5">OUTPUT <code>finished??</code></li>
+    </ul><hr><h2 class="part" data-startline="15" data-endline="15" id="swap"><a class="anchor hidden-xs" href="#swap" title="swap" smoothhashscroll=""><i class="fa fa-link"></i></a>swap</h2><ul class="part" data-startline="17" data-endline="23">
+    <li class="" data-startline="17" data-endline="17">INPUT i,j,list</li>
+    <li class="" data-startline="16" data-endline="16">save:=list[i]</li>
+    <li class="" data-startline="16" data-endline="16">list[i]:=list[j]</li>
+    <li class="" data-startline="16" data-endline="16">list[j]:=save</li>
+    <li class="" data-startline="7" data-endline="7">OUTPUT list</li>
+    <li class="" data-startline="7" data-endline="7">RETURN</li>
+    </ul>
+    <hr>
+    <h2 class="part" data-startline="36" data-endline="36" id="myList"><a class="anchor hidden-xs" href="#myList" title="myList" smoothhashscroll=""><i class="fa fa-link"></i></a>myList</h2><ul class="part" data-startline="38" data-endline="42">
+    <li class="" data-startline="27" data-endline="27"><code>4</code></li>
+    <li class="" data-startline="28" data-endline="28"><code>2</code></li>
+    <li class="" data-startline="29" data-endline="29"><code>3</code></li>
+    <li class="" data-startline="30" data-endline="31"><code>1</code></li>
+    </ul>
+    <h2 class="part" data-startline="36" data-endline="36" id="myStash"><a class="anchor hidden-xs" href="#myStash" title="myList" smoothhashscroll=""><i class="fa fa-link"></i></a>myStash</h2>
+    <code></code>
+    <hr>
+    <h2 class="part" data-startline="36" data-endline="36" id="_OUTPUT">_OUTPUT</h2>
+    <h2 class="part" data-startline="36" data-endline="36" id="_INPUT">_INPUT</h2>
+    <h2 class="part" data-startline="36" data-endline="36" id="_STACK">_STACK</h2>
+    <h2 class="part" data-startline="36" data-endline="36" id="_LOCAL">_LOCAL</h2>
+  </div>
+  <style>
+    .pc {
+      background-color: rgba(250,100,100, .8)
+    }
+  </style>
+  <script>
+    let PC = window.document.querySelector("#main").nextElementSibling.children[0]
+    let OUTPUT = window.document.querySelector("#_OUTPUT")
+    let ARGSTACK = window.document.querySelector("#_INPUT")
+    let CALLSTACK = window.document.querySelector("#_STACK")
+    let stackLevel = 0
+    let STORAGE = window.document.querySelector("#_LOCAL")
+
+    const binaryOperators = {
+      "+": (x,y) => x + y,
+      "-": (x,y) => x - y,
+      "*": (x,y) => x * y,
+      "/": (x,y) => x / y,
+      "AND": (x,y) => x & y,
+      "OR": (x,y) => x | y,
+    }
+    const ARBITRARY_ARITY = -1
+    const builtInFunctions = {
+      "ABS": {
+        arity: 1,
+        fun: (x) => Math.abs(x)
+      },
+      "STASH": {
+        arity: 0,
+        fun: () => {
+          return quoteMemory(STORAGE, true)
+        }
+      },
+      "UNSTASH": {
+        arity: 1,
+        fun: (quotedMem) => {
+          console.log("mem", quotedMem)
+          return loadMemory(STORAGE, quotedMem)
+        }
+      },
+      "INPUT": {
+        arity: ARBITRARY_ARITY,
+        lazy: true,
+        fun: (...vars) => {
+          popArgs(vars)
+        }
+      },
+      "OUTPUT": {
+        arity: ARBITRARY_ARITY,
+        fun: (...outs) => {
+          output(outs)
+        }
+      },
+      "PUSH": {
+        arity: ARBITRARY_ARITY,
+        fun: (...outs) => {
+          pushArgs(outs)
+        }
+      },
+    }
+
+    run()
+
+    async function run() {
+      try {
+        while (true) {
+          executeLine(PC)
+          await sleep(300)
+        }
+      } catch (e) {
+        debugMessage(e)
+      }
+    }
+
+    function debugMessage(message, mode = "info") {
+      PC.insertAdjacentHTML("afterend", `<div class="alert alert-${mode} part">${message}</div>`)
+    }
+
+    function shiftPC() {
+      if (PC instanceof HTMLUListElement) {
+        setPC(PC.children[0])
+      } else {
+        setPC(PC.nextElementSibling)
+      }
+    }
+
+    function setPC(newPC) {
+      if (newPC === null || newPC instanceof HTMLHRElement) {
+        throw ["Program has ended at ", PC]
+      }
+      PC.classList.remove("pc")
+      newPC.classList.add("pc")
+      PC = newPC
+    }
+
+    function executeLine(line) {
+      tokens = tokenizeLine(line)
+      console.log("Statement", tokens)
+      const command = tokens.shift()
+      switch (typeof command === "string" && command.toUpperCase()) {
+        case "IF":
+          // TODO
+          break
+        case "GOTO":
+          setPC(readArguments(tokens, true).shift())
+          break
+        case "GOSUB":
+          pushStack(PC)
+          setPC(readArguments(tokens, true).shift())
+          break
+        case "RETURN":
+          popStack()
+          shiftPC()
+          break
+        default:
+          if (command !== null) {
+            tokens.unshift(command)
+            readExpression(tokens, false)
+            if (tokens.length !== 0) {
+              throw "Could not parse the line. Remainder: "+tokens
+            }
+            shiftPC()
+          }
+      }
+    }
+
+    function tokenizeLine(line) {
+      const tokens = []
+      for (e of line.childNodes) {
+        if (e instanceof Text) {
+          const subtokens = e.data.match(/\-?[a-z0-9\_]+|,|\]|\[|\(|\)|\:\=|[\+\-\*\/]/gi)
+          if (subtokens) {
+            tokens.push(...subtokens)
+          }
+        } else {
+          tokens.push(e)
+        }
+      }
+      return tokens
+    }
+
+    function readArguments(lineTokens, lazy = false, end = "") {
+      const arguments = []
+      if (lineTokens.length === 0) return arguments
+      if (lineTokens[0] === end) {
+        parseConsume(lineTokens, end)
+        return arguments
+      }
+      while (true) {
+        if (lazy) {
+          arguments.push(readVariable(lineTokens))
+        } else {
+          arguments.push(readExpression(lineTokens))
+        }
+        if (lineTokens.length === 0) {
+          return arguments
+        } else if (lineTokens[0] === end) {
+          parseConsume(lineTokens, end)
+          return arguments
+        } else {
+          parseConsume(lineTokens, ",")
+        }
+      }
+    }
+
+    function readExpression(lineTokens, requireReturns = true) {
+      const mainToken = lineTokens[0]
+      let value = mainToken
+      if (typeof mainToken === "string" && mainToken.match(/\-?[0-9]+/)) {
+        // token is an integer literal
+        value = parseInt(mainToken)
+        lineTokens.shift()
+      } else if (typeof mainToken === "string" || mainToken instanceof HTMLAnchorElement) {
+        // the token is a variable and will be resolved
+        value = readVariable(lineTokens)
+        if (lineTokens[0] === ":=") {
+          // we are updating an assignment
+          lineTokens.shift()
+          const newValue = readExpression(lineTokens)
+          assign(value, newValue)
+        } else if (lineTokens[0] === "("){
+          // we are calling a function
+          lineTokens.shift()
+          const arguments = readArguments(lineTokens, value.lazy, ")")
+          value = callFunction(value, arguments)
+        } else if (!requireReturns) {
+          // we are calling a function in command syntax (==> no returns!)
+          const arguments = readArguments(lineTokens, value.lazy)
+          callFunction(value, arguments)
+        }
+        if (value === undefined) {
+          if (requireReturns) {
+            throw "This command does not return values."
+          } else {
+            return
+          }
+        }
+      } else {
+        lineTokens.shift()
+      }
+      value = loadValue(value)
+      // try to read infix operators (right-associatively for now)
+      if (lineTokens[0] in binaryOperators) {
+        const op = binaryOperators[lineTokens[0]]
+        lineTokens.shift()
+        value = op(value, readExpression(lineTokens))
+      }
+      console.log("Eval returns", value)
+      return value
+    }
+
+    /* returns the cell where the content of a variable is stored*/
+    function readVariable(lineTokens) {
+      let mainToken = lineTokens.shift()
+      let value
+      console.log("main token", mainToken)
+      if (mainToken instanceof HTMLAnchorElement) {
+        value = window.document.querySelector(mainToken.hash)
+      } else {
+        value = window.document.querySelector(`#${mainToken}`)
+      }
+      if (value === null) {
+        if (mainToken in builtInFunctions) {
+          // look up the name in the build-in functions
+          value = builtInFunctions[mainToken]
+        } else {
+          // non-existent variables will implicitly be created
+          value = mallocVar(mainToken)
+        }
+      }
+      if (lineTokens[0] === "[") {
+        // we are navigating an array
+        lineTokens.shift()
+        const offset = readExpression(lineTokens)
+        parseConsume(lineTokens, "]")
+        value = resolve(value, offset)
+      } else {
+        value = resolve(value)
+      }
+      console.log("lookup result", mainToken, value)
+      return value
+    }
+
+    function resolve(label, offset = undefined) {
+      if (label.arity !== undefined) {
+        // this is a built-in function and needs no further resolution
+        return label
+      }
+      value = label.nextElementSibling
+      // automatically resolve heap references
+      while (value.localName === "a") {
+        console.log("Lookup address", value.hash)
+        value = window.document.querySelector(`${value.hash}`).nextElementSibling
+      }
+      if (offset !== undefined) {
+        value = value.children[offset]
+        if (value === undefined) {
+          throw `${offset} out of bounds.`
+        }
+      }
+      return value
+    }
+
+    function loadValue(value) {
+      console.log(value.localName)
+      if (["code", "pre", "li"].includes(value.localName)) {
+        value = value.textContent
+        if (value.match(/^\-?[0-9]+$/)) {
+          value = parseInt(value)
+        }
+      }
+      return value
+    }
+
+    function peek(label) {
+      return loadValue(resolve(label))
+    }
+
+    /* quotes a part of the document till the end or <hr> is reached */
+    function quoteMemory(label, andDelete = false) {
+      let quoted = ""
+      label = label.nextSibling
+      while (label !== null && !(label instanceof HTMLHRElement)) {
+        quoted += label.outerHTML || label.textContent
+        const newLabel = label.nextSibling
+        if (andDelete) {
+          label.remove()
+        }
+        label = newLabel
+      }
+      console.log("quoted", quoted)
+      return quoted
+    }
+
+    /* inserts quoted memory into active memory */
+    function loadMemory(label, quotedMem) {
+      label.insertAdjacentHTML("afterend", quotedMem)
+    }
+
+    function output(out) {
+      for (o of out) {
+        if (typeof o === "object") {
+          console.log("Output Obj", o)
+          const outClone = createRef(o)//o.cloneNode(true)
+          OUTPUT.insertAdjacentElement("afterend", outClone)
+          OUTPUT = outClone
+        } else {
+          const outText = window.document.createElement("code")
+          outText.innerText = o
+          OUTPUT.insertAdjacentElement("afterend", outText)
+          OUTPUT = outText
+        }
+      }
+    }
+
+    function mallocVar(name) {
+      console.log("Malloc", name)
+      const variable = window.document.createElement("h4")
+      variable.id = name
+      variable.textContent = name
+      const emptyCell = window.document.createElement("code")
+      STORAGE.insertAdjacentElement("afterend", variable)
+      variable.insertAdjacentElement("afterend", emptyCell)
+      return variable
+    }
+
+    function createRef(variable) {
+      variable = getLabel(variable)
+      const ref = window.document.createElement("a")
+      ref.href = "#"+variable
+      ref.innerText = variable
+      return ref
+    }
+
+    function assign(cell, value) {
+      console.log(`Assing ${getLabel(cell)} with value ${value}.`)
+      if (typeof value === "object") {
+        // save only references to complex objects
+        cell.insertAdjacentElement("beforebegin", createRef(value))
+      } else {
+        const tag = "code"
+        const val = window.document.createElement(tag)
+        val.innerText = value
+        cell.insertAdjacentElement("beforebegin", val)
+      }
+      cell.remove()
+    }
+
+    function getLabel(object) {
+      return object?.previousElementSibling?.id
+    }
+
+    function callFunction(func, arguments) {
+      let value
+      if (func.arity !== undefined) {
+        if (arguments.length === func.arity || func.arity === ARBITRARY_ARITY) {
+          value = func.fun(...arguments)
+        } else {
+          throw `Expected ${func.arity} arguments but received ${arguments.length}.`
+        }
+      } else {
+        pushArgs(arguments)
+        pushStack(PC)
+        setPC(func)
+      }
+      return value
+    }
+
+    function pushArgs(args) {
+      for (o of args.reverse()) {
+        if (typeof o === "object") {
+          const outClone = createRef(o)
+          ARGSTACK.insertAdjacentElement("afterend", outClone)
+        } else {
+          const outText = window.document.createElement("code")
+          outText.innerText = o
+          ARGSTACK.insertAdjacentElement("afterend", outText)
+        }
+      }
+    }
+
+    function popArgs(args) {
+      console.log("Variables to assign", args)
+      for (cell of args) {
+        assign(cell, peek(ARGSTACK))
+        ARGSTACK.nextElementSibling.remove()
+      }
+    }
+
+    function pushStack(pc) {
+      pc.classList.add("stacked")
+      pc.classList.add(`stacked-${stackLevel}`)
+      stackLevel += 1
+    }
+
+    function popStack() {
+      if (stackLevel <= 0) {
+        throw "Can't return at empty stack."
+      }
+      stackLevel -= 1
+      oldPC = window.document.querySelector(`.stacked-${stackLevel}`)
+      oldPC.classList.remove("stacked")
+      oldPC.classList.remove(`stacked-${stackLevel}`)
+      setPC(oldPC)
+    }
+
+    function parseConsume(tokens, expectation) {
+      const token = tokens.shift()
+      if (expectation !== token) {
+        throw `Expected \`${expectation}\` but found \`${token}\`!`
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+  </script>
+</body>
