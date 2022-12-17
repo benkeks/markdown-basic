@@ -5,8 +5,6 @@ let CALLSTACK = window.document.querySelector("#_STACK")
 let stackLevel = 0
 let STORAGE = window.document.querySelector("#_LOCAL")
 
-console.log(PC)
-
 const binaryOperators = {
   "+": (x,y) => x + y,
   "-": (x,y) => x - y,
@@ -77,11 +75,13 @@ export async function run() {
   CALLSTACK = window.document.querySelector("#_STACK")
   stackLevel = 0
   STORAGE = window.document.querySelector("#_LOCAL")
+  runStep()
+}
+
+function runStep() {
   try {
-    while (true) {
-      executeLine(PC)
-      sleep(300)
-    }
+    executeLine(PC)
+    setTimeout(runStep, 300)
   } catch (e) {
     debugMessage(e)
   }
