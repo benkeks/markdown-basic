@@ -6,8 +6,6 @@
     <li class="" data-startline="7" data-endline="7">OutPut myList</li>
     <li class="" data-startline="11" data-endline="12">x := 2 - myList[2]</li>
     <li class="" data-startline="11" data-endline="12">x := ABS(x)</li>
-    <li class="" data-startline="11" data-endline="12">myStash := STASH()</li>
-    <li class="" data-startline="11" data-endline="12">UNSTASH myStash</li>
     <!--<li class="" data-startline="11" data-endline="12">PUSH 0,3,myList</li>
     <li class="" data-startline="11" data-endline="12">GOSUB swap</li>-->
     <li class="" data-startline="11" data-endline="12"><a href="#swap">swap</a>(0,3,myList)</li>
@@ -243,7 +241,7 @@
       } else {
         lineTokens.shift()
       }
-      value = loadValue(value)
+      value = unwrapValue(value)
       // try to read infix operators (right-associatively for now)
       if (lineTokens[0] in binaryOperators) {
         const op = binaryOperators[lineTokens[0]]
@@ -306,8 +304,8 @@
       return value
     }
 
-    function loadValue(value) {
-      console.log(value.localName)
+    /* unwrap what has been saved in a memory value to be used in interpretation */
+    function unwrapValue(value) {
       if (["code", "pre", "li"].includes(value.localName)) {
         value = value.textContent
         if (value.match(/^\-?[0-9]+$/)) {
@@ -317,8 +315,20 @@
       return value
     }
 
+    /* wrap a value from interpretation to be written to memory as HTML element */
+    function wrapValue(value) {
+      if (value.localName) {
+        // it's already some kind of HTML element
+        return value
+      } else {
+        const element = window.document.createElement("code")
+        element.innerText = value
+        return element
+      }
+    }
+
     function peek(label) {
-      return loadValue(resolve(label))
+      return unwrapValue(resolve(label))
     }
 
     /* quotes a part of the document till the end or <hr> is reached */
@@ -350,8 +360,7 @@
           OUTPUT.insertAdjacentElement("afterend", outClone)
           OUTPUT = outClone
         } else {
-          const outText = window.document.createElement("code")
-          outText.innerText = o
+          const outText = wrapValue(o)
           OUTPUT.insertAdjacentElement("afterend", outText)
           OUTPUT = outText
         }
@@ -363,7 +372,7 @@
       const variable = window.document.createElement("h4")
       variable.id = name
       variable.textContent = name
-      const emptyCell = window.document.createElement("code")
+      const emptyCell = wrapValue("")
       STORAGE.insertAdjacentElement("afterend", variable)
       variable.insertAdjacentElement("afterend", emptyCell)
       return variable
@@ -383,10 +392,7 @@
         // save only references to complex objects
         cell.insertAdjacentElement("beforebegin", createRef(value))
       } else {
-        const tag = "code"
-        const val = window.document.createElement(tag)
-        val.innerText = value
-        cell.insertAdjacentElement("beforebegin", val)
+        cell.insertAdjacentElement("beforebegin", wrapValue(value))
       }
       cell.remove()
     }
@@ -417,9 +423,7 @@
           const outClone = createRef(o)
           ARGSTACK.insertAdjacentElement("afterend", outClone)
         } else {
-          const outText = window.document.createElement("code")
-          outText.innerText = o
-          ARGSTACK.insertAdjacentElement("afterend", outText)
+          ARGSTACK.insertAdjacentElement("afterend", wrapValue(o))
         }
       }
     }
@@ -435,6 +439,7 @@
     function pushStack(pc) {
       pc.classList.add("stacked")
       pc.classList.add(`stacked-${stackLevel}`)
+      CALLSTACK.insertAdjacentElement("afterend", wrapValue(quoteMemory(STORAGE, true)))
       stackLevel += 1
     }
 
@@ -446,6 +451,11 @@
       oldPC = window.document.querySelector(`.stacked-${stackLevel}`)
       oldPC.classList.remove("stacked")
       oldPC.classList.remove(`stacked-${stackLevel}`)
+      // delete local variables and restore old local context
+      quoteMemory(STORAGE, true)
+      const stackEntry = CALLSTACK.nextElementSibling
+      loadMemory(STORAGE, unwrapValue(stackEntry))
+      stackEntry.remove()
       setPC(oldPC)
     }
 
