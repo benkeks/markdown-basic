@@ -4,19 +4,42 @@
   <div id="doc" class="markdown-body container-fluid"><h1 class="part" data-startline="1" data-endline="1" id="Selection-Sort-Example"><a class="anchor hidden-xs" href="#Selection-Sort-Example" title="Selection-Sort-Example" smoothhashscroll=""><i class="fa fa-link"></i></a>Selection Sort Example</h1><h2 class="part" data-startline="3" data-endline="3" id="main"><a class="anchor hidden-xs" href="#main" title="main" smoothhashscroll=""><i class="fa fa-link"></i></a>main</h2><ul class="part" data-startline="5" data-endline="12">
     <li class="" data-startline="5" data-endline="5">OUTPUT <code>hello world</code></li>
     <li class="" data-startline="7" data-endline="7">OutPut myList</li>
-    <li class="" data-startline="11" data-endline="12">x := 2 - myList[2]</li>
-    <li class="" data-startline="11" data-endline="12">x := ABS(x)</li>
+    <li class="" data-startline="11" data-endline="12">x := 1 - myList[2]</li>
+    <li class="" data-startline="11" data-endline="12">x := mySgn(x)</li>
     <!--<li class="" data-startline="11" data-endline="12">PUSH 0,3,myList</li>
     <li class="" data-startline="11" data-endline="12">GOSUB swap</li>-->
     <li class="" data-startline="11" data-endline="12"><a href="#swap">swap</a>(0,3,myList)</li>
     <li class="" data-startline="5" data-endline="5">OUTPUT <code>finished??</code></li>
-    </ul><hr><h2 class="part" data-startline="15" data-endline="15" id="swap"><a class="anchor hidden-xs" href="#swap" title="swap" smoothhashscroll=""><i class="fa fa-link"></i></a>swap</h2><ul class="part" data-startline="17" data-endline="23">
-    <li class="" data-startline="17" data-endline="17">INPUT i,j,list</li>
-    <li class="" data-startline="16" data-endline="16">save:=list[i]</li>
-    <li class="" data-startline="16" data-endline="16">list[i]:=list[j]</li>
-    <li class="" data-startline="16" data-endline="16">list[j]:=save</li>
-    <li class="" data-startline="7" data-endline="7">OUTPUT list</li>
-    <li class="" data-startline="7" data-endline="7">RETURN</li>
+    </ul><hr>
+    <h2 class="part" data-startline="15" data-endline="15" id="swap"><a class="anchor hidden-xs" href="#swap" title="swap" smoothhashscroll=""><i class="fa fa-link"></i></a>swap</h2>
+      <ul class="part" data-startline="17" data-endline="23">
+      <li class="" data-startline="17" data-endline="17">INPUT i,j,list</li>
+      <li class="" data-startline="16" data-endline="16">save:=list[i]</li>
+      <li class="" data-startline="16" data-endline="16">list[i]:=list[j]</li>
+      <li class="" data-startline="16" data-endline="16">list[j]:=save</li>
+      <li class="" data-startline="7" data-endline="7">OUTPUT list</li>
+      <li class="" data-startline="7" data-endline="7">RETURN</li>
+    </ul>
+    <hr>
+    <h2 class="part" data-startline="15" data-endline="15" id="mySgn"><a class="anchor hidden-xs" href="#mySgn" title="mySgn" smoothhashscroll=""><i class="fa fa-link"></i></a>mySgn</h2>
+    <ul class="part" data-startline="17" data-endline="23">
+      <li class="" data-startline="17" data-endline="17">INPUT x</li>
+      <li class="" data-startline="16" data-endline="16">IF x > 0 then
+        <ul>
+          <li>x := 1</li>
+        </ul>
+      </li>
+      <li class="" data-startline="16" data-endline="16">ELSE IF x < 0 THEN
+        <ul>
+          <li>x := -1</li>
+        </ul>
+      </li>
+      <li class="" data-startline="16" data-endline="16">ELSE
+        <ul>
+          <li>x := 0</li>
+        </ul>
+      </li>
+      <li class="" data-startline="7" data-endline="7">RETURN x</li>
     </ul>
     <hr>
     <h2 class="part" data-startline="36" data-endline="36" id="myList"><a class="anchor hidden-xs" href="#myList" title="myList" smoothhashscroll=""><i class="fa fa-link"></i></a>myList</h2><ul class="part" data-startline="38" data-endline="42">
@@ -51,6 +74,12 @@
       "-": (x,y) => x - y,
       "*": (x,y) => x * y,
       "/": (x,y) => x / y,
+      "=": (x,y) => x == y,
+      "<>": (x,y) => x != y,
+      ">": (x,y) => x > y,
+      "<": (x,y) => x < y,
+      ">=": (x,y) => x >= y,
+      "<=": (x,y) => x <= y,
       "AND": (x,y) => x & y,
       "OR": (x,y) => x | y,
     }
@@ -119,11 +148,25 @@
       PC.insertAdjacentHTML("afterend", `<div class="alert alert-${mode} part">${message}</div>`)
     }
 
-    function shiftPC() {
+    function shiftPC(skipElse = true) {
       if (PC instanceof HTMLUListElement) {
         setPC(PC.children[0])
       } else {
-        setPC(PC.nextElementSibling)
+        let newPCScope = PC
+        // move out of nested code blocks
+        while (true) {
+          if (newPCScope.nextElementSibling) {
+            setPC(newPCScope.nextElementSibling)
+            if (skipElse && PC.innerText.match(/^ELSE\W/i)) {
+              // skip ELSE branches when moving out of blocks
+              // (= they have to be reached through IF jumps.)
+              shiftPC()
+            }
+            return
+          } else {
+            newPCScope = newPCScope.parentElement
+          }
+        }
       }
     }
 
@@ -142,7 +185,25 @@
       const command = tokens.shift()
       switch (typeof command === "string" && command.toUpperCase()) {
         case "IF":
-          // TODO
+          const cond = readArguments(tokens, false, "THEN").shift()
+          if (cond) {
+            setPC(tokens.shift())
+          } else {
+            shiftPC(false)
+          }
+          break
+        case "ELSE":
+          if (tokens[0].toUpperCase && tokens[0].toUpperCase() === "IF") {
+            tokens.shift()
+            const cond = readArguments(tokens, false, "THEN").shift()
+            if (cond) {
+              setPC(tokens.shift())
+            } else {
+              shiftPC()
+            }
+          } else {
+            setPC(tokens.shift())
+          }
           break
         case "GOTO":
           setPC(readArguments(tokens, true).shift())
@@ -171,7 +232,8 @@
       const tokens = []
       for (e of line.childNodes) {
         if (e instanceof Text) {
-          const subtokens = e.data.match(/\-?[a-z0-9\_]+|,|\]|\[|\(|\)|\:\=|[\+\-\*\/]/gi)
+          const subtokens =
+            e.data.match(/\-?[a-z0-9\_]+|,|\]|\[|\(|\)|\:\=|[\>\<\=]+|[\+\-\*\/]/gi)
           if (subtokens) {
             tokens.push(...subtokens)
           }
@@ -185,8 +247,8 @@
     function readArguments(lineTokens, lazy = false, end = "") {
       const arguments = []
       if (lineTokens.length === 0) return arguments
-      if (lineTokens[0] === end) {
-        parseConsume(lineTokens, end)
+      if (lineTokens[0].toUpperCase && lineTokens[0].toUpperCase() === end) {
+        lineTokens.shift()
         return arguments
       }
       while (true) {
@@ -197,8 +259,8 @@
         }
         if (lineTokens.length === 0) {
           return arguments
-        } else if (lineTokens[0] === end) {
-          parseConsume(lineTokens, end)
+        } else if (lineTokens[0].toUpperCase && lineTokens[0].toUpperCase() === end) {
+          lineTokens.shift()
           return arguments
         } else {
           parseConsume(lineTokens, ",")
@@ -402,10 +464,9 @@
     }
 
     function callFunction(func, arguments) {
-      let value
       if (func.arity !== undefined) {
         if (arguments.length === func.arity || func.arity === ARBITRARY_ARITY) {
-          value = func.fun(...arguments)
+          return func.fun(...arguments)
         } else {
           throw `Expected ${func.arity} arguments but received ${arguments.length}.`
         }
@@ -413,8 +474,8 @@
         pushArgs(arguments)
         pushStack(PC)
         setPC(func)
+        return "__PROMISE__"
       }
-      return value
     }
 
     function pushArgs(args) {
