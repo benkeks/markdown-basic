@@ -5,6 +5,7 @@
     <li class="" data-startline="5" data-endline="5">OUTPUT <code>hello world</code></li>
     <li class="" data-startline="7" data-endline="7">OutPut myList</li>
     <li class="" data-startline="11" data-endline="12">x := 1 - myList[2]</li>
+    <li class="" data-startline="11" data-endline="12">x := <code>GOTO main</code></li>
     <li class="" data-startline="11" data-endline="12">x := mySgn(x)</li>
     <!--<li class="" data-startline="11" data-endline="12">PUSH 0,3,myList</li>
     <li class="" data-startline="11" data-endline="12">GOSUB swap</li>-->
@@ -52,9 +53,13 @@
     <code></code>
     <hr>
     <h2 class="part" data-startline="36" data-endline="36" id="_OUTPUT">_OUTPUT</h2>
+    <hr>
     <h2 class="part" data-startline="36" data-endline="36" id="_INPUT">_INPUT</h2>
+    <hr>
     <h2 class="part" data-startline="36" data-endline="36" id="_STACK">_STACK</h2>
+    <hr>
     <h2 class="part" data-startline="36" data-endline="36" id="_LOCAL">_LOCAL</h2>
+    <hr>
   </div>
   <style>
     .pc {
@@ -201,18 +206,21 @@
             if (cond) {
               setPC(tokens.shift())
             } else {
-              shiftPC()
+              shiftPC(false)
             }
+            tokens.length = 0
           } else {
             setPC(tokens.shift())
           }
           break
         case "GOTO":
           setPC(readArguments(tokens, true).shift())
+          shiftPC()
           break
         case "GOSUB":
           pushStack(PC)
           setPC(readArguments(tokens, true).shift())
+          shiftPC()
           break
         case "RETURN":
           const returnValues = readArguments(tokens)
@@ -381,6 +389,9 @@
         if (value === undefined) {
           throw `${offset} out of bounds.`
         }
+      }
+      if (value === undefined || value.localName === "hr") {
+        throw `Ran into a memory barrier when accessing <code>${label.textContent}</code>!`
       }
       return value
     }
