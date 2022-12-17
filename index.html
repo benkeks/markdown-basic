@@ -183,6 +183,7 @@
       tokens = tokenizeLine(line)
       console.log("Statement", tokens)
       const command = tokens.shift()
+      const oldPC = PC
       switch (typeof command === "string" && command.toUpperCase()) {
         case "IF":
           const cond = readArguments(tokens, false, "THEN").shift()
@@ -191,6 +192,7 @@
           } else {
             shiftPC(false)
           }
+          tokens.length = 0
           break
         case "ELSE":
           if (tokens[0].toUpperCase && tokens[0].toUpperCase() === "IF") {
@@ -213,18 +215,28 @@
           setPC(readArguments(tokens, true).shift())
           break
         case "RETURN":
+          const returnValues = readArguments(tokens)
+          output(returnValues)
           popStack()
           shiftPC()
           break
         default:
           if (command !== null) {
             tokens.unshift(command)
-            readExpression(tokens, false)
-            if (tokens.length !== 0) {
-              throw "Could not parse the line. Remainder: "+tokens
+            const returns = readExpression(tokens, false)
+            if (returns.function) {
+              // invoke a user defined function
+              pushArgs(returns.arguments)
+              pushStack(PC, returns.writeback)
+              setPC(returns.function)
             }
             shiftPC()
           }
+      }
+      if (tokens.length !== 0) {
+        // restore previous position in order to highlight the line where the error occurred
+        setPC(oldPC)
+        throw "Could not parse the line. Remainder: "+tokens
       }
     }
 
@@ -282,7 +294,12 @@
           // we are updating an assignment
           lineTokens.shift()
           const newValue = readExpression(lineTokens)
-          assign(value, newValue)
+          if (newValue.function) {
+            newValue.writeback = value
+            value = newValue
+          } else {
+            assign(value, newValue)
+          }
         } else if (lineTokens[0] === "("){
           // we are calling a function
           lineTokens.shift()
@@ -308,7 +325,9 @@
       if (lineTokens[0] in binaryOperators) {
         const op = binaryOperators[lineTokens[0]]
         lineTokens.shift()
-        value = op(value, readExpression(lineTokens))
+        const secondArg = readExpression(lineTokens)
+        checkValuesPrimitive(value, secondArg)
+        value = op(value, secondArg)
       }
       console.log("Eval returns", value)
       return value
@@ -389,6 +408,15 @@
       }
     }
 
+    function checkValuesPrimitive(...values) {
+      const nonPrimitive = values.find(v => typeof v === "object" || typeof v === "function")
+      if (nonPrimitive?.function) {
+        throw `You may not place a call to a user-defined function like this.`
+      } else if (nonPrimitive) {
+        throw `Expected primitive value but found ${nonPrimitive}.`
+      }
+    }
+
     function peek(label) {
       return unwrapValue(resolve(label))
     }
@@ -429,6 +457,14 @@
       }
     }
 
+    function undoOutput() {
+      const oldOut = OUTPUT
+      const outVal = unwrapValue(oldOut)
+      OUTPUT = OUTPUT.previousSibling
+      oldOut.remove()
+      return outVal
+    }
+
     function mallocVar(name) {
       console.log("Malloc", name)
       const variable = window.document.createElement("h4")
@@ -466,15 +502,19 @@
     function callFunction(func, arguments) {
       if (func.arity !== undefined) {
         if (arguments.length === func.arity || func.arity === ARBITRARY_ARITY) {
+          if (arguments.some(a => a.function)) {
+            throw `User-defined functions may not be appear in function calls.`
+          }
           return func.fun(...arguments)
         } else {
           throw `Expected ${func.arity} arguments but received ${arguments.length}.`
         }
       } else {
-        pushArgs(arguments)
-        pushStack(PC)
-        setPC(func)
-        return "__PROMISE__"
+        return {
+          function: func,
+          arguments: arguments,
+          writeback: undefined
+        }
       }
     }
 
@@ -497,10 +537,14 @@
       }
     }
 
-    function pushStack(pc) {
+    function pushStack(pc, writebackAddress = undefined) {
       pc.classList.add("stacked")
       pc.classList.add(`stacked-${stackLevel}`)
-      CALLSTACK.insertAdjacentElement("afterend", wrapValue(quoteMemory(STORAGE, true)))
+      if (writebackAddress) {
+        writebackAddress.classList.add(`writeback-${stackLevel}`)
+      }
+      const stackEntry = quoteMemory(STORAGE, true)
+      CALLSTACK.insertAdjacentElement("afterend", wrapValue(stackEntry))
       stackLevel += 1
     }
 
@@ -514,10 +558,16 @@
       oldPC.classList.remove(`stacked-${stackLevel}`)
       // delete local variables and restore old local context
       quoteMemory(STORAGE, true)
-      const stackEntry = CALLSTACK.nextElementSibling
+      let stackEntry = CALLSTACK.nextElementSibling
       loadMemory(STORAGE, unwrapValue(stackEntry))
       stackEntry.remove()
       setPC(oldPC)
+      // if a writeback is expected, perform it from output stack
+      const writeback = window.document.querySelector(`.writeback-${stackLevel}`)
+      if (writeback) {
+        writeback.classList.remove(`writeback-${stackLevel}`)
+        assign(writeback, undoOutput())
+      }
     }
 
     function parseConsume(tokens, expectation) {
