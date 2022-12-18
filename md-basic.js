@@ -79,6 +79,12 @@ export default class MDBasic {
         documentation: "Take the absolute value of a number",
         fun: (x) => Math.abs(x)
       },
+      // list functions
+      "LENGTH": {
+        arity: 1,
+        documentation: "Determine length of a list",
+        fun: (x) => x.children.length
+      },
     }
   }
 
@@ -117,22 +123,24 @@ export default class MDBasic {
   }
 
   shiftPC(skipElse = true) {
-    if (this.PC instanceof HTMLUListElement) {
-      this.setPC(this.PC.children[0])
-    } else {
-      let newPCScope = this.PC
-      // move out of nested code blocks
-      while (true) {
-        if (newPCScope.nextElementSibling) {
-          this.setPC(newPCScope.nextElementSibling)
-          if (skipElse && this.PC.innerText.match(/^ELSE\W/i)) {
-            // skip ELSE branches when moving out of blocks
-            // (= they have to be reached through IF jumps.)
-            this.shiftPC()
-          }
+    let newPCScope = this.PC
+    // move out of nested code blocks
+    while (true) {
+      if (newPCScope.nextElementSibling) {
+        this.setPC(newPCScope.nextElementSibling)
+        if (skipElse && this.PC.innerText.match(/^ELSE\W/i)) {
+          // skip ELSE branches when moving out of blocks
+          // (= they have to be reached through IF jumps.)
+          this.shiftPC()
+        }
+        return
+      } else {
+        newPCScope = newPCScope.parentElement
+        if (newPCScope.innerText.match(/^WHILE\W/i)) {
+          // loop at whiles
+          console.log("WHILE", newPCScope)
+          this.setPC(newPCScope)
           return
-        } else {
-          newPCScope = newPCScope.parentElement
         }
       }
     }
@@ -142,6 +150,10 @@ export default class MDBasic {
     if (newPC === null || newPC instanceof HTMLHRElement) {
       throw new MDBError("Program has ended.")
     }
+    while (newPC instanceof HTMLUListElement || newPC instanceof HTMLOListElement) {
+      // move into list blocks
+      newPC = newPC.children[0]
+    }
     this.PC.classList.remove("pc")
     newPC.classList.add("pc")
     this.PC = newPC
@@ -149,6 +161,7 @@ export default class MDBasic {
 
   executeLine(line) {
     let tokens = this.tokenizeLine(line)
+    console.log(tokens)
     const command = tokens.shift()
     const oldPC = this.PC
     switch (typeof command === "string" && command.toUpperCase()) {
@@ -175,14 +188,21 @@ export default class MDBasic {
           this.setPC(tokens.shift())
         }
         break
+      case "WHILE":
+        const whileCond = this.readArguments(tokens, false, "DO").shift()
+        if (whileCond) {
+          this.setPC(tokens.shift())
+        } else {
+          this.shiftPC(false)
+        }
+        tokens.length = 0
+        break
       case "GOTO":
         this.setPC(this.readArguments(tokens, true).shift())
-        this.shiftPC()
         break
       case "GOSUB":
         this.pushStack(this.PC)
         this.setPC(this.readArguments(tokens, true).shift())
-        this.shiftPC()
         break
       case "RETURN":
         const returnValues = this.readArguments(tokens)
@@ -199,14 +219,15 @@ export default class MDBasic {
             this.pushArgs(returns.args)
             this.pushStack(this.PC, returns.writeback)
             this.setPC(returns.function)
+          } else {
+            this.shiftPC()
           }
-          this.shiftPC()
         }
     }
     if (tokens.length !== 0) {
       // restore previous position in order to highlight the line where the error occurred
-      setPC(oldPC)
-      throw new MDBError("Could not parse the line. Remainder: "+tokens)
+      this.setPC(oldPC)
+      throw new MDBError("Could not parse the line. Remainder: " + tokens)
     }
   }
 
