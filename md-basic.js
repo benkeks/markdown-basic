@@ -7,15 +7,17 @@ class MDBError {
     this.location = location
   }
 }
+
 export default class MDBasic {
 
-  constructor() {
+  constructor(doc = window.document.body) {
+    this.doc = doc
     this.PC = window.document.querySelector("#main").nextElementSibling.children[0]
-    this.OUTPUT = window.document.querySelector("#_OUTPUT")
-    this.ARGSTACK = window.document.querySelector("#_INPUT")
-    this.CALLSTACK = window.document.querySelector("#_STACK")
+    this.OUTPUT = this.obtainMemArea("_OUTPUT")
+    this.ARGSTACK = this.obtainMemArea("_INPUT")
+    this.CALLSTACK = this.obtainMemArea("_STACK")
     this.stackLevel = 0
-    this.STORAGE = window.document.querySelector("#_LOCAL")
+    this.STORAGE = this.obtainMemArea("_LOCAL")
     this.executionSpeed = 150
 
     this.binaryOperators = {
@@ -78,6 +80,19 @@ export default class MDBasic {
         fun: (x) => Math.abs(x)
       },
     }
+  }
+
+
+  obtainMemArea(id) {
+    let mem = this.doc.querySelector(`#${id}`)
+    if (mem === null) {
+      mem = window.document.createElement("h2")
+      mem.id = id
+      mem.innerText = id
+      this.doc.append(mem)
+      mem.insertAdjacentHTML("afterend", "<hr>")
+    }
+    return mem
   }
 
   run() {
