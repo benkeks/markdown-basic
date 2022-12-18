@@ -356,7 +356,7 @@ export default class MDBasic {
   wrapValue(value) {
     if (value.localName) {
       // it's already some kind of HTML element
-      return value
+      return this.createRef(value)
     } else {
       const element = window.document.createElement("code")
       element.innerText = value
@@ -399,15 +399,9 @@ export default class MDBasic {
 
   output(out) {
     for (let o of out) {
-      if (typeof o === "object") {
-        const outClone = this.createRef(o)//o.cloneNode(true)
-        this.OUTPUT.insertAdjacentElement("afterend", outClone)
-        this.OUTPUT = outClone
-      } else {
-        const outText = this.wrapValue(o)
-        this.OUTPUT.insertAdjacentElement("afterend", outText)
-        this.OUTPUT = outText
-      }
+      const outText = this.wrapValue(o)
+      this.OUTPUT.insertAdjacentElement("afterend", outText)
+      this.OUTPUT = outText
     }
   }
 
@@ -439,12 +433,7 @@ export default class MDBasic {
 
   assign(cell, value) {
     console.log(`Assing ${this.getLabel(cell)} with value ${value}.`)
-    if (typeof value === "object") {
-      // save only references to complex objects
-      cell.insertAdjacentElement("beforebegin", this.createRef(value))
-    } else {
-      cell.insertAdjacentElement("beforebegin", this.wrapValue(value))
-    }
+    cell.insertAdjacentElement("beforebegin", this.wrapValue(value))
     cell.remove()
   }
 
@@ -473,12 +462,7 @@ export default class MDBasic {
 
   pushArgs(args) {
     for (let o of args.reverse()) {
-      if (typeof o === "object") {
-        const outClone = this.createRef(o)
-        this.ARGSTACK.insertAdjacentElement("afterend", outClone)
-      } else {
-        this.ARGSTACK.insertAdjacentElement("afterend", this.wrapValue(o))
-      }
+      this.ARGSTACK.insertAdjacentElement("afterend", this.wrapValue(o))
     }
   }
 
