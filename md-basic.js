@@ -12,11 +12,10 @@ export default class MDBasic {
 
   constructor(doc = window.document.body) {
     this.doc = doc
-    this.PC = window.document.querySelector("#main").nextElementSibling.children[0]
+    this.PC = this.findPC()
     this.OUTPUT = this.obtainMemArea("_OUTPUT")
     this.ARGSTACK = this.obtainMemArea("_INPUT")
     this.CALLSTACK = this.obtainMemArea("_STACK")
-    this.stackLevel = 0
     this.STORAGE = this.obtainMemArea("_LOCAL")
     this.executionSpeed = 150
 
@@ -25,6 +24,7 @@ export default class MDBasic {
       "-": (x,y) => x - y,
       "*": (x,y) => x * y,
       "/": (x,y) => x / y,
+      "^": (x,y) => x ** y,
       "=": (x,y) => x == y,
       "<>": (x,y) => x != y,
       ">": (x,y) => x > y,
@@ -33,7 +33,7 @@ export default class MDBasic {
       "<=": (x,y) => x <= y,
       "AND": (x,y) => x & y,
       "OR": (x,y) => x | y,
-    } 
+    }
     this.builtInFunctions = {
       // memory management
       "INPUT": {
@@ -69,7 +69,6 @@ export default class MDBasic {
         arity: 1,
         documentation: "Fill local memory with named variables and their content from a string.",
         fun: (quotedMem) => {
-          console.log("mem", quotedMem)
           return this.loadMemory(this.STORAGE, quotedMem)
         }
       },
@@ -88,7 +87,6 @@ export default class MDBasic {
     }
   }
 
-
   obtainMemArea(id) {
     let mem = this.doc.querySelector(`#${id}`)
     if (mem === null) {
@@ -101,29 +99,67 @@ export default class MDBasic {
     return mem
   }
 
+  findPC() {
+    return [...this.doc.querySelectorAll("em")]
+      .find(el => el?.firstChild?.innerText === "RUN" || el?.firstChild?.innerText === "RUNNING")
+  }
+
+  findCall(stackLevel) {
+    return [...this.doc.querySelectorAll("em")]
+      .find(el => el?.firstChild?.innerText === "CALL-" + stackLevel)
+  }
+
   run() {
+    this.setPCState("RUNNING")
+    this.shiftPC()
     this.runStep()
   }
 
   runStep() {
-    try {
-      this.executeLine(this.PC)
-      setTimeout(() => this.runStep(), this.executionSpeed)
-    } catch (e) {
-      if (e instanceof MDBError) {
-        this.debugMessage(e.msg)
-      } else {
-        throw e
+    if (this.getPCState() === "RUNNING") {
+      try {
+        this.executeLine(this.getPCLocation())
+        setTimeout(() => this.runStep(), this.executionSpeed)
+      } catch (e) {
+        if (e instanceof MDBError) {
+          if (e.msg === "Program has ended.") {
+            this.setPCState("EXIT")
+          } else {
+            this.setPCState("ERROR")
+          }
+          this.debugMessage(e.msg)
+        } else {
+          throw e
+        }
       }
     }
   }
 
+  setPCState(state, stackLevel) {
+    if (stackLevel === undefined) {
+      stackLevel = this.getPCStackLevel()
+    }
+    this.PC.firstChild.innerHTML = state + "-" + stackLevel
+  }
+
+  getPCState() {
+    return this.PC.firstChild.innerHTML.split("-")[0]
+  }
+
+  getPCStackLevel() {
+    return parseInt(this.PC.firstChild.innerHTML.split("-")[1]) || 0
+  }
+
+  getPCLocation() {
+    return this.PC.nextSibling || this.PC.parentElement.nextSibling
+  }
+
   debugMessage(message, mode = "info") {
-    this.PC.insertAdjacentHTML("afterend", `<div class="alert alert-${mode} part">${message}</div>`)
+    this.PC.insertAdjacentHTML("beforeend", `<div class="alert alert-${mode} part">${message}</div>`)
   }
 
   shiftPC(skipElse = true) {
-    let newPCScope = this.PC
+    let newPCScope = this.getPCLocation()
     // move out of nested code blocks
     while (true) {
       if (newPCScope.nextElementSibling) {
@@ -146,17 +182,18 @@ export default class MDBasic {
     }
   }
 
-  setPC(newPC) {
-    if (newPC === null || newPC instanceof HTMLHRElement) {
+  setPC(newPCLocation) {
+    if (newPCLocation === null || newPCLocation instanceof HTMLHRElement) {
       throw new MDBError("Program has ended.")
     }
-    while (newPC instanceof HTMLUListElement || newPC instanceof HTMLOListElement) {
+    while (newPCLocation instanceof HTMLUListElement || newPCLocation instanceof HTMLOListElement) {
       // move into list blocks
-      newPC = newPC.children[0]
+      newPCLocation = newPCLocation.children[0]
     }
-    this.PC.classList.remove("pc")
-    newPC.classList.add("pc")
-    this.PC = newPC
+    newPCLocation.insertAdjacentElement("beforebegin", this.PC)
+    // this.PC.classList.remove("pc")
+    // newPC.classList.add("pc")
+    // this.PC = newPC
   }
 
   executeLine(line) {
@@ -201,7 +238,7 @@ export default class MDBasic {
         this.setPC(this.readArguments(tokens, true).shift())
         break
       case "GOSUB":
-        this.pushStack(this.PC)
+        this.pushStack(this.getPCLocation())
         this.setPC(this.readArguments(tokens, true).shift())
         break
       case "RETURN":
@@ -217,7 +254,7 @@ export default class MDBasic {
           if (returns.function) {
             // invoke a user defined function
             this.pushArgs(returns.args)
-            this.pushStack(this.PC, returns.writeback)
+            this.pushStack(this.getPCLocation(), returns.writeback)
             this.setPC(returns.function)
           } else {
             this.shiftPC()
@@ -510,24 +547,26 @@ export default class MDBasic {
   }
 
   pushStack(pc, writebackAddress = undefined) {
+    const stackLevel = this.getPCStackLevel()
     pc.classList.add("stacked")
-    pc.classList.add(`stacked-${this.stackLevel}`)
+    pc.classList.add(`stacked-${stackLevel}`)
     if (writebackAddress) {
-      writebackAddress.classList.add(`writeback-${this.stackLevel}`)
+      writebackAddress.classList.add(`writeback-${stackLevel}`)
     }
     const stackEntry = this.quoteMemory(this.STORAGE, true)
     this.CALLSTACK.insertAdjacentElement("afterend", this.wrapValue(stackEntry))
-    this.stackLevel += 1
+    this.setPCState(this.getPCState(), stackLevel + 1)
   }
 
   popStack() {
-    if (this.stackLevel <= 0) {
+    let stackLevel = this.getPCStackLevel()
+    if (stackLevel <= 0) {
       throw new MDBError("Can't return at empty stack.")
     }
-    this.stackLevel -= 1
-    let oldPC = window.document.querySelector(`.stacked-${this.stackLevel}`)
+    stackLevel -= 1
+    let oldPC = window.document.querySelector(`.stacked-${stackLevel}`)
     oldPC.classList.remove("stacked")
-    oldPC.classList.remove(`stacked-${this.stackLevel}`)
+    oldPC.classList.remove(`stacked-${stackLevel}`)
     // delete local variables and restore old local context
     this.quoteMemory(this.STORAGE, true)
     let stackEntry = this.CALLSTACK.nextElementSibling
@@ -535,11 +574,12 @@ export default class MDBasic {
     stackEntry.remove()
     this.setPC(oldPC)
     // if a writeback is expected, perform it from output stack
-    const writeback = window.document.querySelector(`.writeback-${this.stackLevel}`)
+    const writeback = window.document.querySelector(`.writeback-${stackLevel}`)
     if (writeback) {
-      writeback.classList.remove(`writeback-${this.stackLevel}`)
+      writeback.classList.remove(`writeback-${stackLevel}`)
       this.assign(writeback, this.undoOutput())
     }
+    this.setPCState(this.getPCState(), stackLevel - 1)
   }
 
   parseConsume(tokens, expectation) {
