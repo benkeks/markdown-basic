@@ -109,6 +109,10 @@ export default class MDBasic {
       .find(el => el?.firstChild?.innerText === "CALL-" + stackLevel)
   }
 
+  insertCall(pc, stackLevel) {
+    pc.insertAdjacentHTML("beforebegin", `<em><strong>CALL-${stackLevel}</strong><em/>`)
+  }
+
   run() {
     this.setPCState("RUNNING")
     this.shiftPC()
@@ -548,8 +552,7 @@ export default class MDBasic {
 
   pushStack(pc, writebackAddress = undefined) {
     const stackLevel = this.getPCStackLevel()
-    pc.classList.add("stacked")
-    pc.classList.add(`stacked-${stackLevel}`)
+    this.insertCall(pc, stackLevel)
     if (writebackAddress) {
       writebackAddress.classList.add(`writeback-${stackLevel}`)
     }
@@ -564,15 +567,15 @@ export default class MDBasic {
       throw new MDBError("Can't return at empty stack.")
     }
     stackLevel -= 1
-    let oldPC = window.document.querySelector(`.stacked-${stackLevel}`)
-    oldPC.classList.remove("stacked")
-    oldPC.classList.remove(`stacked-${stackLevel}`)
     // delete local variables and restore old local context
     this.quoteMemory(this.STORAGE, true)
     let stackEntry = this.CALLSTACK.nextElementSibling
     this.loadMemory(this.STORAGE, this.unwrapValue(stackEntry))
     stackEntry.remove()
+    // restore PC
+    let oldPC = this.findCall(stackLevel)
     this.setPC(oldPC)
+    oldPC.remove()
     // if a writeback is expected, perform it from output stack
     const writeback = window.document.querySelector(`.writeback-${stackLevel}`)
     if (writeback) {
