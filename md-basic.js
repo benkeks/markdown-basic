@@ -36,7 +36,7 @@ export default class MDBasic {
     }
     this.builtInFunctions = {
       // memory management
-      "INPUT": {
+      "input": {
         arity: ARBITRARY_ARITY,
         documentation: "Fill variables with values from the input stack.",
         lazy: true,
@@ -44,28 +44,28 @@ export default class MDBasic {
           this.popArgs(vars)
         }
       },
-      "OUTPUT": {
+      "output": {
         arity: ARBITRARY_ARITY,
         documentation: "Add a value to the output history.",
         fun: (...outs) => {
           this.output(outs)
         }
       },
-      "PUSH": {
+      "push": {
         arity: ARBITRARY_ARITY,
         documentation: "Add a value to the input stack.",
         fun: (...outs) => {
           this.pushArgs(outs)
         }
       },
-      "STASH": {
+      "stash": {
         arity: 0,
         documentation: "Serialize local memory including variable labels into a string.",
         fun: () => {
           return this.quoteMemory(this.STORAGE, true)
         }
       },
-      "UNSTASH": {
+      "unstash": {
         arity: 1,
         documentation: "Fill local memory with named variables and their content from a string.",
         fun: (quotedMem) => {
@@ -73,13 +73,13 @@ export default class MDBasic {
         }
       },
       // math functions
-      "ABS": {
+      "abs": {
         arity: 1,
         documentation: "Take the absolute value of a number",
         fun: (x) => Math.abs(x)
       },
       // list functions
-      "LENGTH": {
+      "length": {
         arity: 1,
         documentation: "Determine length of a list",
         fun: (x) => x.children.length
@@ -178,7 +178,6 @@ export default class MDBasic {
         newPCScope = newPCScope.parentElement
         if (newPCScope.innerText.match(/^WHILE\W/i)) {
           // loop at whiles
-          console.log("WHILE", newPCScope)
           this.setPC(newPCScope)
           return
         }
@@ -205,9 +204,9 @@ export default class MDBasic {
     console.log(tokens)
     const command = tokens.shift()
     const oldPC = this.PC
-    switch (typeof command === "string" && command.toUpperCase()) {
-      case "IF":
-        const cond = this.readArguments(tokens, false, "THEN").shift()
+    switch (typeof command === "string" && command.toLowerCase()) {
+      case "if":
+        const cond = this.readArguments(tokens, false, "then").shift()
         if (cond) {
           this.setPC(tokens.shift())
         } else {
@@ -215,10 +214,10 @@ export default class MDBasic {
         }
         tokens.length = 0
         break
-      case "ELSE":
-        if (tokens[0].toUpperCase && tokens[0].toUpperCase() === "IF") {
+      case "else":
+        if (tokens[0].toLowerCase && tokens[0].toLowerCase() === "if") {
           tokens.shift()
-          const cond = this.readArguments(tokens, false, "THEN").shift()
+          const cond = this.readArguments(tokens, false, "then").shift()
           if (cond) {
             this.setPC(tokens.shift())
           } else {
@@ -229,8 +228,8 @@ export default class MDBasic {
           this.setPC(tokens.shift())
         }
         break
-      case "WHILE":
-        const whileCond = this.readArguments(tokens, false, "DO").shift()
+      case "while":
+        const whileCond = this.readArguments(tokens, false, "do").shift()
         if (whileCond) {
           this.setPC(tokens.shift())
         } else {
@@ -238,10 +237,10 @@ export default class MDBasic {
         }
         tokens.length = 0
         break
-      case "GOTO":
+      case "goto":
         this.setPC(this.readArguments(tokens, true).shift())
         break
-      case "RETURN":
+      case "return":
         const returnValues = this.readArguments(tokens)
         this.output(returnValues)
         this.popStack()
@@ -287,7 +286,7 @@ export default class MDBasic {
   readArguments(lineTokens, lazy = false, end = "") {
     const args = []
     if (lineTokens.length === 0) return args
-    if (lineTokens[0].toUpperCase && lineTokens[0].toUpperCase() === end) {
+    if (lineTokens[0].toLowerCase && lineTokens[0].toLowerCase() === end) {
       lineTokens.shift()
       return args
     }
@@ -299,7 +298,7 @@ export default class MDBasic {
       }
       if (lineTokens.length === 0) {
         return args
-      } else if (lineTokens[0].toUpperCase && lineTokens[0].toUpperCase() === end) {
+      } else if (lineTokens[0].toLowerCase && lineTokens[0].toLowerCase() === end) {
         lineTokens.shift()
         return args
       } else {
@@ -364,19 +363,15 @@ export default class MDBasic {
   /* returns the cell where the content of a variable is stored*/
   readVariable(lineTokens) {
     let mainToken = lineTokens.shift()
-    let value
-    if (mainToken instanceof HTMLAnchorElement) {
-      value = window.document.querySelector(mainToken.hash)
-    } else {
-      value = window.document.querySelector(`#${mainToken}`)
-    }
+    let normalizedName = mainToken.hash?.slice(1) || mainToken.toLowerCase()
+    let value = window.document.querySelector(`#${normalizedName}`)
     if (value === null) {
-      if (mainToken.toUpperCase() in this.builtInFunctions) {
+      if (normalizedName in this.builtInFunctions) {
         // look up the name in the build-in functions
-        value = this.builtInFunctions[mainToken.toUpperCase()]
+        value = this.builtInFunctions[normalizedName]
       } else {
         // non-existent variables will implicitly be created
-        value = this.createVar(mainToken)
+        value = this.createVar(normalizedName)
       }
     }
     if (lineTokens[0] === "[") {
