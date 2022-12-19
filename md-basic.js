@@ -85,6 +85,8 @@ export default class MDBasic {
         fun: (x) => x.children.length
       },
     }
+    // auto-start if there is a RUNNING tag
+    if (this.PC) this.run()
   }
 
   obtainMemArea(id) {
@@ -100,8 +102,19 @@ export default class MDBasic {
   }
 
   findPC() {
-    return [...this.doc.querySelectorAll("em")]
-      .find(el => el?.firstChild?.innerText === "RUN" || el?.firstChild?.innerText === "RUNNING")
+    const pcs = [...this.doc.querySelectorAll("em")]
+      .filter(el => el?.firstChild?.innerText === "RUN" || el?.firstChild?.innerText === "RUNNING")
+    pcs.forEach(pc => this.decoratePCPointer(pc))
+    return pcs.find(el => el?.firstChild?.innerText === "RUNNING")
+  }
+
+  decoratePCPointer(pc) {
+    pc.addEventListener("click", (ev) => {
+      if (pc.firstChild.innerHTML.split("-")[0] === "RUN") {
+        this.run(pc)
+      }
+    })
+    pc.style.cursor = "pointer"
   }
 
   findCall(stackLevel) {
@@ -113,7 +126,11 @@ export default class MDBasic {
     pc.insertAdjacentHTML("beforebegin", `<em><strong>CALL-${stackLevel}</strong><em/>`)
   }
 
-  run() {
+  run(pc) {
+    this.PC = pc || this.PC
+    if (!this.PC) {
+      throw "You have to name a starting position!"
+    }
     this.setPCState("RUNNING")
     this.shiftPC()
     this.runStep()
@@ -187,16 +204,17 @@ export default class MDBasic {
 
   setPC(newPCLocation) {
     if (newPCLocation === null || newPCLocation instanceof HTMLHRElement) {
-      throw new MDBError("Program has ended.")
+      if (this.getPCStackLevel() !== 0) {
+        throw new MDBError("Program ended unexpectedly during a function call. (Missing <code>RETURN</code>?)")
+      } else {
+        throw new MDBError("Program has ended.")
+      }
     }
     while (newPCLocation instanceof HTMLUListElement || newPCLocation instanceof HTMLOListElement) {
       // move into list blocks
       newPCLocation = newPCLocation.children[0]
     }
     newPCLocation.insertAdjacentElement("beforebegin", this.PC)
-    // this.PC.classList.remove("pc")
-    // newPC.classList.add("pc")
-    // this.PC = newPC
   }
 
   executeLine(line) {
