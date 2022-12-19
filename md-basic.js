@@ -241,10 +241,6 @@ export default class MDBasic {
       case "GOTO":
         this.setPC(this.readArguments(tokens, true).shift())
         break
-      case "GOSUB":
-        this.pushStack(this.getPCLocation())
-        this.setPC(this.readArguments(tokens, true).shift())
-        break
       case "RETURN":
         const returnValues = this.readArguments(tokens)
         this.output(returnValues)
