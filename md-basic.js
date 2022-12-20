@@ -197,6 +197,8 @@ export default class MDBasic {
           // loop at whiles
           this.setPC(newPCScope)
           return
+        } else if (newPCScope instanceof HTMLQuoteElement) {
+          throw new MDBError("Hit end of quoted code block.")
         }
       }
     }
