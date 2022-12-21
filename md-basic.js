@@ -13,11 +13,12 @@ export default class MDBasic {
   constructor(doc = window.document.body) {
     this.doc = doc
     this.PC = this.findPC()
-    this.OUTPUT = this.obtainMemArea("_OUTPUT")
+    this.lastOutput = null
     this.ARGSTACK = this.obtainMemArea("_INPUT")
     this.CALLSTACK = this.obtainMemArea("_STACK")
     this.STORAGE = this.obtainMemArea("_LOCAL")
     this.executionSpeed = 150
+    this.provideStyleSheets()
 
     this.binaryOperators = {
       "+": (x,y) => x + y,
@@ -84,6 +85,12 @@ export default class MDBasic {
         documentation: "Determine length of a list",
         fun: (x) => x.children.length
       },
+      // conversions
+      "string": {
+        arity: 1,
+        documentation: "Convert a value to a string",
+        fun: (x) => x.outerHTML || x.toString()
+      },
     }
     // auto-start if there is a RUNNING tag
     if (this.PC) this.run()
@@ -101,6 +108,16 @@ export default class MDBasic {
     return mem
   }
 
+  provideStyleSheets() {
+    let style = document.createElement("style")
+    document.head.appendChild(style)
+    style.sheet.insertRule(".mdb-pc { background-color: rgba(100,150,250, .4) }")
+    style.sheet.insertRule(".mdb-call { background-color: rgba(50,140,200, .3) }")
+    style.sheet.insertRule(".mdb-debug { background-color: rgba(230,230,50, .4) }")
+    style.sheet.insertRule(".mdb-output { background-color: rgba(150,230,150, .5); margin-left: .7rem; }")
+    style.sheet.insertRule(".mdb-output, .mdb-pc, .mdb-debug, .mdb-output { padding: .1rem; border-radius: .2rem }")
+  }
+
   findPC() {
     const pcs = [...this.doc.querySelectorAll("em")]
       .filter(el => el?.firstChild?.innerText === "RUN" || el?.firstChild?.innerText === "RUNNING")
@@ -114,6 +131,7 @@ export default class MDBasic {
         this.run(pc)
       }
     })
+    pc.classList.add("mdb-pc")
     pc.style.cursor = "pointer"
   }
 
@@ -123,7 +141,7 @@ export default class MDBasic {
   }
 
   insertCall(pc, stackLevel) {
-    pc.insertAdjacentHTML("beforebegin", `<em><strong>CALL-${stackLevel}</strong><em/>`)
+    pc.insertAdjacentHTML("beforebegin", `<em class="mdb-call"><strong>CALL-${stackLevel}</strong><em/>`)
   }
 
   run(pc) {
@@ -145,10 +163,11 @@ export default class MDBasic {
         if (e instanceof MDBError) {
           if (e.msg === "Program has ended.") {
             this.setPCState("EXIT")
+            this.debugMessage(e.msg)
           } else {
             this.setPCState("ERROR")
+            this.debugMessage(e.msg, "error")
           }
-          this.debugMessage(e.msg)
         } else {
           throw e
         }
@@ -172,11 +191,11 @@ export default class MDBasic {
   }
 
   getPCLocation() {
-    return this.PC.nextSibling || this.PC.parentElement.nextSibling
+    return this.PC.nextSibling
   }
 
   debugMessage(message, mode = "info") {
-    this.PC.insertAdjacentHTML("beforeend", `<div class="alert alert-${mode} part">${message}</div>`)
+    this.getPCLocation().insertAdjacentHTML("beforeend", `<div class="mdb-debug alert alert-${mode} part">${message}</div>`)
   }
 
   shiftPC(skipElse = true) {
@@ -488,17 +507,15 @@ export default class MDBasic {
   output(out) {
     for (let o of out) {
       const outText = this.wrapValue(o)
-      this.OUTPUT.insertAdjacentElement("afterend", outText)
-      this.OUTPUT = outText
+      this.lastOutput = window.document.createElement("span")
+      this.lastOutput.classList.add("mdb-output")
+      this.lastOutput.appendChild(outText)
+      this.getPCLocation().insertAdjacentElement("beforeend", this.lastOutput)
     }
   }
 
-  undoOutput() {
-    const oldOut = this.OUTPUT
-    const outVal = this.unwrapValue(oldOut)
-    this.OUTPUT = this.OUTPUT.previousSibling
-    oldOut.remove()
-    return outVal
+  getLastOutput() {
+    return this.unwrapValue(this.lastOutput.firstChild)
   }
 
   createVar(name) {
@@ -591,7 +608,7 @@ export default class MDBasic {
     const writeback = window.document.querySelector(`.writeback-${stackLevel}`)
     if (writeback) {
       writeback.classList.remove(`writeback-${stackLevel}`)
-      this.assign(writeback, this.undoOutput())
+      this.assign(writeback, this.getLastOutput())
     }
     this.setPCState(this.getPCState(), stackLevel - 1)
   }
