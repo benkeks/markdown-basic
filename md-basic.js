@@ -17,7 +17,7 @@ export default class MDBasic {
     this.ARGSTACK = null
     this.CALLSTACK = this.obtainMemArea("_STACK")
     this.STORAGE = this.obtainMemArea("_LOCAL")
-    this.executionSpeed = 1000
+    this.executionSpeed = 150
     this.provideStyleSheets()
 
     this.binaryOperators = {
@@ -210,7 +210,7 @@ export default class MDBasic {
     while (true) {
       if (newPCScope.nextElementSibling) {
         this.setPC(newPCScope.nextElementSibling)
-        if (skipElse && this.PC.innerText.match(/^ELSE\W/i)) {
+        if (skipElse && this.getPCLocation()?.innerText.match(/^ELSE\W/i)) {
           // skip ELSE branches when moving out of blocks
           // (= they have to be reached through IF jumps.)
           this.shiftPC()
