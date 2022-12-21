@@ -146,6 +146,9 @@ export default class MDBasic {
   }
 
   run(pc) {
+    if (pc !== this.PC) {
+      this.cleanupCalls()
+    }
     this.PC = pc || this.PC
     this.ARGSTACK = pc.firstChild
     if (!this.PC) {
@@ -193,7 +196,7 @@ export default class MDBasic {
   }
 
   getPCLocation() {
-    return this.PC.nextSibling
+    return this.PC.nextSibling || this.PC.parentElement.nextSibling
   }
 
   debugMessage(message, mode = "info") {
@@ -617,6 +620,14 @@ export default class MDBasic {
       this.assign(writeback, this.getLastOutput())
     }
     this.setPCState(this.getPCState(), stackLevel - 1)
+  }
+
+  cleanupCalls() {
+    let stackLevel = (!this.PC && -1) || this.getPCStackLevel()
+    for (let i = 0; i < stackLevel; i++) {
+      window.document.querySelectorAll(`.writeback-${i}`).forEach(e => e.remove())
+      this.findCall(i).remove()
+    }
   }
 
   parseConsume(tokens, expectation) {
