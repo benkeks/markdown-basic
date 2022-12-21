@@ -14,10 +14,10 @@ export default class MDBasic {
     this.doc = doc
     this.PC = this.findPC()
     this.lastOutput = null
-    this.ARGSTACK = this.obtainMemArea("_INPUT")
+    this.ARGSTACK = null
     this.CALLSTACK = this.obtainMemArea("_STACK")
     this.STORAGE = this.obtainMemArea("_LOCAL")
-    this.executionSpeed = 150
+    this.executionSpeed = 1000
     this.provideStyleSheets()
 
     this.binaryOperators = {
@@ -111,7 +111,8 @@ export default class MDBasic {
   provideStyleSheets() {
     let style = document.createElement("style")
     document.head.appendChild(style)
-    style.sheet.insertRule(".mdb-pc { background-color: rgba(100,150,250, .4) }")
+    style.sheet.insertRule(".mdb-pc, .mdb-pc:first-child { background-color: rgba(100,150,250, .4) }")
+    style.sheet.insertRule(".mdb-pc>a, .mdb-pc>code { margin-left: .7rem}")
     style.sheet.insertRule(".mdb-call { background-color: rgba(50,140,200, .3) }")
     style.sheet.insertRule(".mdb-debug { background-color: rgba(230,230,50, .4) }")
     style.sheet.insertRule(".mdb-output { background-color: rgba(150,230,150, .5); margin-left: .7rem; }")
@@ -146,6 +147,7 @@ export default class MDBasic {
 
   run(pc) {
     this.PC = pc || this.PC
+    this.ARGSTACK = pc.firstChild
     if (!this.PC) {
       throw "You have to name a starting position!"
     }
