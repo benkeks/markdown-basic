@@ -200,6 +200,10 @@ export default class MDBasic {
     this.getPCLocation().insertAdjacentHTML("beforeend", `<div class="mdb-debug alert alert-${mode} part">${message}</div>`)
   }
 
+  isMDBElement(element) {
+    return element.classList && Array.from(element.classList.values()).some(c => c.startsWith("mdb-"))
+  }
+
   shiftPC(skipElse = true) {
     let newPCScope = this.getPCLocation()
     // move out of nested code blocks
@@ -317,7 +321,7 @@ export default class MDBasic {
         if (subtokens) {
           tokens.push(...subtokens)
         }
-      } else {
+      } else if (!this.isMDBElement(e)) {
         tokens.push(e)
       }
     }
