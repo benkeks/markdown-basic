@@ -414,6 +414,13 @@ export default class MDBasic {
   readVariable(lineTokens) {
     let mainToken = lineTokens.shift()
     let normalizedName = mainToken.hash?.slice(1) || mainToken.toLowerCase()
+    if (!normalizedName.match(/\w+/i)) {
+      if (normalizedName === "=") {
+        throw new MDBError(`Please use <code>:=</code> for variable assignments! (<code>=</code> is reserved for comparing values.)`)
+      } else {
+        throw new MDBError(`Proper identifier expected, but found <code>${normalizedName}</code>. (Only alphanumeric characters are allowed here!)`)
+      }
+    }
     let value = window.document.querySelector(`#${normalizedName}`)
     if (value === null) {
       if (normalizedName in this.builtInFunctions) {
