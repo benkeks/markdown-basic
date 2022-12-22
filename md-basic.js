@@ -32,6 +32,7 @@ export default class MDBasic {
       "<": (x,y) => x < y,
       ">=": (x,y) => x >= y,
       "<=": (x,y) => x <= y,
+      "MOD": (x,y) => x % y,
       "AND": (x,y) => x & y,
       "OR": (x,y) => x | y,
     }
