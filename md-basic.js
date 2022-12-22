@@ -204,7 +204,8 @@ export default class MDBasic {
   }
 
   isMDBElement(element) {
-    return element.classList && Array.from(element.classList.values()).some(c => c.startsWith("mdb-"))
+    return element.classList &&
+      Array.from(element.classList.values()).some(c => c.startsWith("mdb-"))
   }
 
   shiftPC(skipElse = true) {
@@ -298,7 +299,7 @@ export default class MDBasic {
         if (command !== null) {
           tokens.unshift(command)
           const returns = this.readExpression(tokens, false)
-          if (returns.function) {
+          if (returns?.function) {
             // invoke a user defined function
             this.pushArgs(returns.args)
             this.pushStack(this.getPCLocation(), returns.writeback)
@@ -459,7 +460,7 @@ export default class MDBasic {
 
   /* unwrap what has been saved in a memory value to be used in interpretation */
   unwrapValue(value) {
-    if (["code", "pre", "li"].includes(value.localName)) {
+    if (["code", "pre", "li", "p"].includes(value.localName)) {
       value = value.textContent
       if (value.match(/^\-?[0-9]+$/)) {
         value = parseInt(value)
@@ -559,7 +560,7 @@ export default class MDBasic {
     if (func.arity !== undefined) {
       if (args.length === func.arity || func.arity === ARBITRARY_ARITY) {
         if (args.some(a => a.function)) {
-          throw new MDBError(`User-defined functions may not be appear in function calls.`)
+          throw new MDBError(`User-defined functions may not be appear as arguments to function calls.`)
         }
         return func.fun(...args)
       } else {
