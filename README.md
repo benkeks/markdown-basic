@@ -10,6 +10,7 @@ You just place `***RUN***` somewhere in your Markdown file. In the rendered outp
 >
 > - greet(`ben`)
 > - greet(`you!`)
+>
 > -----
 >
 > ### greet
@@ -46,6 +47,7 @@ Local variables are created when accessed. They are assigned by `x := e` syntax.
 > ***RUN***
 > - localy := `hello `
 > - OUTPUT localy + globalx
+>
 > ----------
 >
 > #### globalx
@@ -54,13 +56,15 @@ Local variables are created when accessed. They are assigned by `x := e` syntax.
 
 The local variable are, by the way, also added to the DOM, at the end of the document body. *The DOM is the memory!*
 
+The program execution ends at horizontal lines. (`----` in Markdown – pay attention, some Markdown parsers might also get such a line to mark a heading...)
+
 ### Function calls
 
 Functions are defined as global variables. Their input is retrieved through `INPUT x` statements. They are called in the standard `functionname(e1, e2)` syntax. They provide their output through `RETURN e` statements. Builtin statements can be accessed without parenthesis.
 
 > ***RUN***
 >
-> - myfunction(23)
+> - n := myfunction(23)
 > - OUTPUT n + 31
 >
 > ----------
@@ -116,6 +120,7 @@ If a variable contains an unnumbered list, it's elements can be accessed through
 >   - i := i - 1
 >   - list[i] := list[i] ^ 2
 > - OUTPUT string(list)
+>
 > ------
 > #### list
 > - 1
@@ -125,8 +130,7 @@ If a variable contains an unnumbered list, it's elements can be accessed through
 
 ------
 
-
-<script type="module">
+<script type="module" defer>
   import MDBasic from './md-basic.js'
   new MDBasic()
 </script>

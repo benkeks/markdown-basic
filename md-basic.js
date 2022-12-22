@@ -121,8 +121,13 @@ export default class MDBasic {
   }
 
   findPC() {
-    const pcs = [...this.doc.querySelectorAll("em")]
+    let pcs = [...this.doc.querySelectorAll("em")]
       .filter(el => el?.firstChild?.innerText === "RUN" || el?.firstChild?.innerText === "RUNNING")
+    if (pcs.length === 0) {
+      // address that Jekyll and other systems might invert the order of strong and em...
+      pcs = [...this.doc.querySelectorAll("strong")]
+      .filter(el => el?.firstChild?.innerText === "RUN" || el?.firstChild?.innerText === "RUNNING")
+    }
     pcs.forEach(pc => this.decoratePCPointer(pc))
     return pcs.find(el => el?.firstChild?.innerText === "RUNNING")
   }
