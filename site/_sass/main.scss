@@ -6,4 +6,6 @@ body {
   background: $backgroundColor;
   color: $bodyColor;
   font-family: $bodyFont;
+  max-width: 50rem;
+  margin: auto;
 }
