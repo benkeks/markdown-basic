@@ -1,10 +1,10 @@
 # MD Basic: Execute Markdown as Pseudo Code
 
-**MD Basic** interprets the DOM of a website / document as a simple script language and its runtime memory. The HTML elements it employs are a subset of those that can easily be expressed in Markdown. A simple JS script makes Markdown documents express and run simple algorithms.
+**MD Basic** interprets the DOM of a website / document as a basic scripting language and its runtime memory. The HTML elements it employs are a subset of those that can easily be expressed in Markdown. A simple JS script makes Markdown documents express and run algorithms.
 
 ## Example
 
-You just place `***RUN***` somewhere in your Markdown file. In the rendered output, you can click the RUN token to start execution there. (This, of course, only works if you use a Markdown viewer / renderer that allows the JS script to run. E.g. the GitHub rendering of this readme will not be executable.)
+You just place `***RUN***` somewhere in your Markdown file. In the rendered output, you can click the RUN token to start execution there. (This, of course, only works if you use a Markdown viewer / renderer that allows the JS script to run. E.g. the GitHub rendering of this readme is not executable, but the one rendered to <https://benkeks.github.io/markdown-basic/> is.)
 
 > ***RUN***
 >
@@ -26,7 +26,7 @@ Include the interpreter in your HTML like this:
 
 ```html
 <script type="module">
-  import MDBasic from './md-basic.js'
+  import MDBasic from 'https://benkeks.github.io/markdown-basic/md-basic.js'
   new MDBasic()
 </script>
 ```
@@ -38,7 +38,7 @@ The syntax is mostly case-insensitive. For the purpose of the examples, we'll wr
 ### Input / output
 
 - `INPUT x` – Assign a value from the input stack to variable `x` (usually at the beginning of a function).
-- `OUTPUT e` – Output result of executing `e`.
+- `OUTPUT e` – Output result of executing `e` next to the code.
 
 ### Variable access and assignments
 
@@ -127,6 +127,12 @@ If a variable contains an unnumbered list, it's elements can be accessed through
 > - 2
 > - 3
 > - 4
+
+If you assign a complex value to a variable, the element is not copied. Instead, a reference to the complex value is stored. (Thus, complex values are passed to functions following the call-by-sharing paradigm.)
+
+## Why “BASIC?”
+
+This whole paradigm of having data and code as one dynamic interpreted document feels a lot like classic BASIC programming (or assembler, if you will). Consequently, there's also a `GOTO label` command – don't use it! ;)
 
 ------
 
