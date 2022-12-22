@@ -322,7 +322,7 @@ export default class MDBasic {
     for (let e of line.childNodes) {
       if (e instanceof Text) {
         const subtokens =
-          e.data.match(/\-?[a-z0-9\_]+|,|\]|\[|\(|\)|\:\=|[\>\<\=]+|[\+\-\*\/]/gi)
+          e.data.match(/\-?[a-z0-9\_]+|,|\]|\[|\(|\)|\:\=|[\>\<\=\^]+|[\+\-\*\/]/gi)
         if (subtokens) {
           tokens.push(...subtokens)
         }
