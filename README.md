@@ -84,12 +84,13 @@ Program flow can be structured by `IF e THEN <subblock> [ELSE <elseblock>]` and 
 > ***RUN***
 > - n := 5
 > - WHILE n > 0 DO
->   - x := myabs(n - 3)
+>   - x := mysgn(n - 3)
+>   - OUTPUT n
 >   - OUTPUT x
 >   - n := n - 1
 >
 > ---------
-> ## myabs
+> ## mysgn
 > - INPUT n
 > - IF n > 0 THEN
 >   - RETURN 1
