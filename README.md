@@ -19,6 +19,10 @@ You just place `***RUN***` somewhere in your Markdown file. In the rendered outp
 > - OUTPUT `hello ` + yourName
 > - RETURN
 
+### Further examples
+
+- [Sorting algorithms in MD Basic](https://benkeks.github.io/markdown-basic/examples/sorting-algorithms/)
+
 
 ## How to use
 

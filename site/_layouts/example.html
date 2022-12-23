@@ -5,6 +5,6 @@ layout: default
 {{ content }}
 
 <script type="module" defer>
-  import MDBasic from '../md-basic.js'
+  import MDBasic from '{{ "/md-basic.js" | relative_url }}'
   new MDBasic()
 </script>
