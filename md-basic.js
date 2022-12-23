@@ -633,7 +633,7 @@ export default class MDBasic {
       writeback.classList.remove(`writeback-${stackLevel}`)
       this.assign(writeback, this.getLastOutput())
     }
-    this.setPCState(this.getPCState(), stackLevel - 1)
+    this.setPCState(this.getPCState(), stackLevel)
   }
 
   cleanupCalls() {
