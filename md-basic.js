@@ -84,7 +84,13 @@ export default class MDBasic {
       "length": {
         arity: 1,
         documentation: "Determine length of a list",
-        fun: (x) => x.children.length
+        fun: (x) => {
+          if (x.children && x.children.length !== undefined) {
+            return x.children.length
+          } else {
+            throw new MDBError(`Does not have a length: ${x}`, x)
+          }
+        }
       },
       // conversions
       "string": {
