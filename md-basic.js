@@ -132,11 +132,12 @@ export default class MDBasic {
   provideStyleSheets() {
     let style = document.createElement("style")
     document.head.appendChild(style)
-    style.sheet.insertRule(".mdb-pc, .mdb-pc:first-child { background-color: rgba(100,150,250, .4) }")
+    style.sheet.insertRule(".mdb-pc, .mdb-pc:first-child { background-color: rgba(100,150,250, .8) }")
     style.sheet.insertRule(".mdb-pc>a, .mdb-pc>code { margin-left: .7rem}")
-    style.sheet.insertRule(".mdb-call { background-color: rgba(50,140,200, .3) }")
-    style.sheet.insertRule(".mdb-debug { background-color: rgba(230,230,50, .4) }")
-    style.sheet.insertRule(".mdb-output { background-color: rgba(150,230,150, .5); margin-left: .7rem; }")
+    style.sheet.insertRule(".mdb-call { background-color: rgba(50,140,200, .6) }")
+    style.sheet.insertRule(".mdb-call, .mdb-pc { float: left; margin-right: -100%; transform: translate(-110%, 0px); z-index: -10;}")
+    style.sheet.insertRule(".mdb-debug { background-color: rgba(230,230,50, .4); float: right; }")
+    style.sheet.insertRule(".mdb-output { background-color: rgba(150,230,150, .5); float: right; margin-left: .7rem; margin-top: -.2rem; margin-bottom: -.2rem }")
     style.sheet.insertRule(".mdb-output, .mdb-pc, .mdb-debug, .mdb-output { padding: .1rem; border-radius: .2rem }")
   }
 
