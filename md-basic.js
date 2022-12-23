@@ -74,6 +74,20 @@ export default class MDBasic {
           return this.loadMemory(this.STORAGE, quotedMem)
         }
       },
+      "clone": {
+        arity: 1,
+        documentation: "Create a shallow copy of a complex value on the heap and return its reference.",
+        fun: (obj) => {
+          return this.cloneObject(obj)
+        }
+      },
+      "delete": {
+        arity: ARBITRARY_ARITY,
+        documentation: "Remove objects from the heap.",
+        fun: (...objs) => {
+          objs.forEach(this.deleteObject)
+        }
+      },
       // math functions
       "abs": {
         arity: 1,
@@ -463,7 +477,12 @@ export default class MDBasic {
     // automatically resolve heap references
     while (value.localName === "a") {
       console.log("Lookup address", value.hash)
-      value = window.document.querySelector(`${value.hash}`).nextElementSibling
+      const result = window.document.querySelector(`${value.hash}`)?.nextElementSibling
+      if (result) {
+        value = result
+      } else {
+        throw new MDBError(`Could not find object ${value.hash}! (Likely due to a dangling reference.)`)
+      }
     }
     if (offset !== undefined) {
       value = value.children[offset]
@@ -563,6 +582,30 @@ export default class MDBasic {
     ref.href = "#"+variable
     ref.innerText = variable
     return ref
+  }
+
+  cloneObject(value) {
+    if (value.localName) {
+      const cloneId = "clone_" + Math.floor(Math.random() * 65536)
+      const clone = value.cloneNode(true)
+      const cloneLabel = window.document.createElement("h4")
+      cloneLabel.id = cloneId
+      cloneLabel.textContent = cloneId
+      value.insertAdjacentElement("afterend", cloneLabel)
+      cloneLabel.insertAdjacentElement("afterend", clone)
+      return clone
+    } else {
+      throw new MDBError("You may only clone heap objects!")
+    }
+  }
+
+  deleteObject(value) {
+    if (value.localName && value.previousElementSibling?.id) {
+      value.previousElementSibling.remove()
+      value.remove()
+    } else {
+      throw new MDBError("You may only delete labeled heap objects!")
+    }
   }
 
   assign(cell, value) {
