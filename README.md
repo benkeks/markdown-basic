@@ -46,7 +46,11 @@ The syntax is mostly case-insensitive. For the purpose of the examples, we'll wr
 
 ### Variable access and assignments
 
-Local variables are created when accessed. They are assigned by `x := e` syntax. Global variables (and functions) exist if there is a label in the input program for them. A label is an HTML entity with the variables name in lower-case as id attribute. The value of a labeled variable is the DOM element that follows the label. Values can be string `hello`, numbers (expressed as plain numbers), unnumbered lists of values, or links to other labels in the memory. Numbers and strings will be coerced by the funny JavaScript semantics.
+The DOM is the memory.
+
+**Local variables** are created when accessed. They are assigned by `x := e` syntax.
+
+**Global variables** (and functions) exist if there is a label in the input program for them. A *label* is an HTML entity with the variables name in lower-case as `id` attribute. In Markdown, such labels come into existence by placing a heading. The value of a labeled variable is the DOM element that follows the label. Values can be string `hello`, numbers (expressed as plain numbers), unnumbered lists of values, or links to other labels in the memory. Numbers and strings will be coerced by the funny JavaScript semantics.
 
 > ***RUN***
 > - localy := `hello `
@@ -58,7 +62,7 @@ Local variables are created when accessed. They are assigned by `x := e` syntax.
 >
 > `world`
 
-The local variable are, by the way, also added to the DOM, at the end of the document body. *The DOM is the memory!*
+The local variables are, by the way, also added to the DOM, at the end of the document body. *The DOM is the memory!*
 
 The program execution ends at horizontal lines. (`----` in Markdown – pay attention, some Markdown parsers might also get such a line to mark a heading...)
 
