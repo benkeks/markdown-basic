@@ -83,7 +83,7 @@ Functions are defined as global variables. Their input is retrieved through `INP
 > - OUTPUT `hello`
 > - RETURN x + 19
 
-Due to the simplicity of the program-counter model, calls to user-defined functions may only appear at the toplevel or directly at the right-hand side of an assignment.
+Due to the simplicity of the program-counter model, calls to user-defined functions may only appear on their own line or directly at the right-hand side of an assignment. That is, statements like `userfunction1(userfunction2(x))` cannot be handled.
 
 ### Conditions
 
